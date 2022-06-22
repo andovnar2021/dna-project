@@ -11,10 +11,10 @@ app = Flask(__name__)
 
 client = app.test_client()
 
-app.config['dbconfig'] = { 'host': 'dos07.cpovql6hlxi2.eu-central-1.rds.amazonaws.com',
+app.config['dbconfig'] = { 'host': 'dbflask.cpovql6hlxi2.eu-central-1.rds.amazonaws.com',
                            'user': 'admin',
                            'password': 'Ad123456',
-                           'database': 'flask-db', }
+                           'database': 'flask_db', }
 
 @app.route('/login')
 def do_login():
