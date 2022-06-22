@@ -110,10 +110,10 @@ pipeline {
                 withAWS(credentials:'awscreds') {
                     sh '''#!/bin/bash
 
-                    TASK_NAME=task
-                    SERVICE_NAME=flask-service
+                    TASK_NAME=dev-my-flask-app
+                    SERVICE_NAME=dev-my_app_flask-service
                     IMAGE_NAME=11051988/myflaskapp
-                    CLUSTER_NAME=flaskcluster
+                    CLUSTER_NAME=dev-my-app-cluster
                     REGION=eu-central-1
                     VERSION=${env.BUILD_NUMBER} 
                     ACCOUNT_NUMBER=648139240099
