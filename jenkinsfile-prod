@@ -1,0 +1,133 @@
+pipeline {
+    agent any
+    
+    triggers {
+    GenericTrigger (
+      genericVariables: [
+                 [key: 'ref', value: '$.ref'],
+               
+      ],
+      regexpFilterText: '$ref',
+      regexpFilterExpression: '^(refs/heads/main*)$',
+      causeString: 'Triggered on $ref',
+      token: "flaskdos07dev", 
+      printContributedVariables: true,
+      printPostContent: true,
+      silentResponse: false,
+    )
+  }
+    
+    
+    environment {
+        
+        DOCKERHUB_CREDENTIALS=credentials('dh1')
+        
+    
+       
+    }
+    
+   
+
+    stages {
+        
+        stage('Checkout') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/main*']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/andovnar2021/dna-project.git']]])
+            }
+        }
+    
+
+        stage('Pre-build') {
+            steps {
+              script {
+                      sh """#!/bin/bash
+                          python3 -m venv ~/.somevenv
+                          source ~/.somevenv/bin/activate
+                          pip install --upgrade pip &&\
+                          pip install -r requirements.txt
+                          pylint myapp.py
+                          pytest mytest.py
+
+                            """
+                }
+           
+            }
+        }
+        
+                
+
+    
+        
+        stage('Build') {
+
+			steps {
+			    
+			  sh "docker build -t 11051988/myflaskapp:latest ."
+			 
+			}
+		}
+		
+		stage('Exec') {
+
+			steps {
+			    
+			   sh '''
+                 echo Variables from shell:
+                 echo ref $ref
+             
+                '''
+			 
+			}
+		}
+		
+        stage('Status Build') {
+            steps {
+                slackSend channel: '#test_chanel', color: 'good', message: 'The build successful'
+            }
+        }  
+        
+      stage('Login') {
+
+			steps {
+				sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+			}
+		}
+
+		stage('Push') {
+
+			steps {
+				sh "docker push 11051988/myflaskapp:latest "
+			}
+		}
+		
+
+		
+		stage('Deploy') {
+            steps {
+                echo 'Deploying....'
+                withAWS(credentials:'awscreds') {
+                    sh 'aws ecs update-service --cluster prod-my-app-cluster --service prod-my_app_flask-service --task-definition prod-my-flask-app --force-new-deployment --region eu-central-1'
+                  }
+            }
+		}
+		
+
+	
+    }
+    
+    post {
+       
+        
+        success {
+               slackSend channel: '#test_chanel', color: 'good', message:"Build deployed successfully - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+            }
+        failure {
+             slackSend failOnError:true, message:"Build failed  - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)" , channel:'#test_chanel', color: 'danger'
+    }
+		always {
+			sh 'docker logout'
+			 
+		}
+	}
+
+}
