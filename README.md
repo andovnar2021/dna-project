@@ -26,5 +26,3 @@ https://github.com/andovnar2021/infra_flask_app.git
 5. Deploy to AWS ECS service. 5
 
 
-
-
